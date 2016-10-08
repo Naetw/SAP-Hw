@@ -94,6 +94,15 @@ elif [ $response = 0 ] ; then
                                  # since the update of screen is by command output,
                                  # it will redirect in to $var, therefore the screen will be empty.
 
+        # shell cmd judge 
+        sh_cmd="$(echo "$user_input" | gawk -F '\n' '{if(sub(/^!/, "", $1)) print $1}')"
+        if [ "$sh_cmd" != "" ] ; then
+            result=$(command $sh_cmd 2>> ~/.mybrowser/error)
+            dialog --title "Nae browser" --msgbox "$(printf "$result")" 200 100
+            dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100 
+            continue
+        fi
+
         # judge url if it's url, output to variable judge
         judge=$(echo "$user_input" |\
             gawk '{if(match($1,/(https?|ftp|file):\/\/([\da-z\.-]+)\.[a-z\.]{2,6}[-A-Za-z0-9\+&@#\/%=~_|\?\.]*/, a)) print a[0]; else print "False"}')
