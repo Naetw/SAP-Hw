@@ -1,4 +1,5 @@
 #!/bin/sh 
+export LC_CTYPE='zh_TW.UTF-8'
 
 dialog --title "Terms and conditions of Use" --yesno "`cat ~/.mybrowser/userterm`" 200 100
 
