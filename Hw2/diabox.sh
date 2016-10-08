@@ -1,5 +1,6 @@
 #!/bin/sh 
 export LC_CTYPE='zh_TW.UTF-8'
+touch ~/.mybrowser/bookmark 
 
 dialog --title "Terms and conditions of Use" --yesno "`cat ~/.mybrowser/userterm`" 200 100
 
@@ -31,12 +32,49 @@ download () {
     # extract link number
     idx=$(dialog --title "Nae browser" --menu "Downloads:" 200 100 200 `echo $link` \
         3>&1 1>&2 2>&3 3>&-)
-    # if canceled, back to inputbox
+    # if canceled, back to current page
     if [ "$idx" = "" ] ; then
         dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
         return
     fi
     wget "$(echo "$link" | grep "^$idx " | gawk -F '\n' '{sub(/^[1-9]\s/, "", $1) ; print $1}')" -P ~/Downloads/
+}
+
+bookmark () {
+    menu=$(echo "Add_a_bookmark"; echo "Delete_a_bookmark"; cat ~/.mybrowser/bookmark)
+    menu=$(echo "$menu" | gawk '{print NR " " $1}') 
+    idx=$(dialog --title "Nae browser" --menu "Bookmarks:" 200 100 200 `echo $menu` \
+        3>&1 1>&2 2>&3 3>&-)
+    if [ "$idx" = "" ] ; then
+        dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
+        return
+    fi
+    if [ "$idx" -gt 2 ] ; then
+        idx=$(( $idx-2 ))
+        current_url=$(sed -n "$idx p" ~/.mybrowser/bookmark)
+        dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
+        return
+    else
+        # add
+        if [ $idx = 1 ] ; then
+            rep=$(cat ~/.mybrowser/bookmark | gawk -v cur_link="$current_url" '{if(cur_link == $1) print $1}')
+            if [ "$rep" != "" ] ; then
+                dialog --title "Nae browser" --msgbox "This webpage is already in your bookmark." 20 100
+                return
+            fi
+            echo "$current_url" >> ~/.mybrowser/bookmark
+        # delete
+        else
+            menu=$(cat ~/.mybrowser/bookmark | gawk '{print NR " " $1}')
+            idx=$(dialog --title "Nae browser" --menu "Bookmarks:" 200 100 200 `echo $menu` \
+                3>&1 1>&2 2>&3 3>&-)
+            if [ "$idx" = "" ] ; then
+                dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
+            else
+                echo "$(sed "$idx d" ~/.mybrowser/bookmark)" > ~/.mybrowser/bookmark 
+            fi
+        fi
+    fi
 }
 
 
@@ -55,7 +93,7 @@ elif [ $response = 0 ] ; then
             3>&1 1>&2 2>&3 3>&-) # if we do not include this command,
                                  # since the update of screen is by command output,
                                  # it will redirect in to $var, therefore the screen will be empty.
-        
+
         # judge url if it's url, output to variable judge
         judge=$(echo "$user_input" |\
             gawk '{if(match($1,/(https?|ftp|file):\/\/([\da-z\.-]+)\.[a-z\.]{2,6}[-A-Za-z0-9\+&@#\/%=~_|\?\.]*/, a)) print a[0]; else print "False"}')
@@ -93,6 +131,8 @@ elif [ $response = 0 ] ; then
             dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
         elif [ "$user_input" = "/D" -o "$user_input" = "/download" ] ; then
             download
+        elif [ "$user_input" = "/B" -o "$user_input" = "/bookmark" ] ; then
+            bookmark
         elif [ "$user_input" = "" ] ; then
             break
         else
