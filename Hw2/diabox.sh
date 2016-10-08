@@ -20,6 +20,22 @@ help () {
     dialog --title "Help manual" --msgbox "$help" 20 100
 }
 
+link () {
+    # catch <a href="[link]"... 
+    link=$(curl -sL $current_url | grep "<a" | gawk -F "\n" '{if(match($1,/\s<a\shref="(.*)".*<\/a>/,lk)) print lk[1]}')
+    
+    # make path plus url (use -v option to use shell variable)
+    link=$(echo "$link" | gawk -v cur_link="$current_url" '{if(/^\//) print NR " " cur_link $1; else print NR " " $1 }')
+    
+    # extract link number
+    idx=$(dialog --title "Nae browser" --menu "Links:" 200 100 200 `echo $link` \
+        3>&1 1>&2 2>&3 3>&-)
+
+    #change current page
+    current_url=$(echo "$link" | grep "^$idx" | gawk -F '\n' '{sub(/^[1-9]\s/, "", $1) ; print $1}')
+}
+
+
 # if the response is no or esc, give the leaving message
 if [ $response = 1 -o $response = 255 ] ; then
     dialog --title "Apology" --msgbox "$leave_msg" 20 100
@@ -46,6 +62,8 @@ elif [ $response = 0 ] ; then
             src
         elif [ "$user_input" = "/H" -o "$user_input" = "/help" ] ; then
             help
+        elif [ "$user_input" = "/L" -o "$user_input" = "/link" ] ; then
+            link
         elif [ "$user_input" = "" ] ; then
             break
         else
