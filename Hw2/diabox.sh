@@ -31,7 +31,9 @@ download () {
     # extract link number
     idx=$(dialog --title "Nae browser" --menu "Downloads:" 200 100 200 `echo $link` \
         3>&1 1>&2 2>&3 3>&-)
+    # if canceled, back to inputbox
     if [ "$idx" = "" ] ; then
+        dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
         return
     fi
     wget "$(echo "$link" | grep "^$idx " | gawk -F '\n' '{sub(/^[1-9]\s/, "", $1) ; print $1}')" -P ~/Downloads/
@@ -76,6 +78,7 @@ elif [ $response = 0 ] ; then
 
             # if choosing cancel, back to inputbox
             if [ "$idx" = "" ] ; then
+                dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
                 continue
             fi
 
@@ -83,7 +86,7 @@ elif [ $response = 0 ] ; then
             current_url=$(echo "$link" | grep "^$idx" | gawk -F '\n' '{sub(/^[1-9]\s/, "", $1) ; print $1}')
             current_url=$(echo "$current_url" | gawk '{if(!/.*\/$/) print $1 "/"; else print $1}')
             
-            # deal with the previous directory path
+            # deal with redirective url 
             current_url=$(curl -Ls -o /dev/null -w '%{url_effective}' $current_url)
 
             # open the changed page
