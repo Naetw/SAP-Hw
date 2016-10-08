@@ -38,7 +38,7 @@ elif [ $response = 0 ] ; then
         # judge url if it's url, output to variable judge
         judge=$(echo "$user_input" |\
             gawk '{if(match($1,/(https?|ftp|file):\/\/([\da-z\.-]+)\.[a-z\.]{2,6}[-A-Za-z0-9\+&@#\/%=~_|\?\.]*/, a)) print a[0]; else print "False"}')
-        if [ "$judge" = "$user_input" ] ; then
+        if [ "$judge" = "$user_input" -a "$user_input" != "False" ] ; then
             dialog --title "Nae browser" --msgbox "$(w3m -dump "$user_input")" 200 100
             current_url="$user_input"
         elif [ "$user_input"  = "/S" -o "$user_input" = "/source" ] ; then
