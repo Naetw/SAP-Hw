@@ -2,6 +2,11 @@
 export LC_CTYPE='zh_TW.UTF-8'
 touch ~/.mybrowser/bookmark 
 
+# build prev_page and next_page
+touch ~/.mybrowser/prev_page 
+touch ~/.mybrowser/next_page
+
+
 dialog --title "Terms and conditions of Use" --yesno "`cat ~/.mybrowser/userterm`" 200 100
 
 response=$?
@@ -49,6 +54,7 @@ bookmark () {
         dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
         return
     elif [ "$idx" -gt 2 ] ; then
+        echo "$current_url" >> ~/.mybrowser/prev_page
         idx=$(( $idx-2 ))
         current_url=$(sed -n "$idx p" ~/.mybrowser/bookmark)
         dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
@@ -78,6 +84,45 @@ bookmark () {
     fi
 }
 
+prevp () {
+    idx=$(awk 'END{print NR}' ~/.mybrowser/prev_page)
+    if [ "$idx" = 0 ] ; then
+        dialog --title "Nae browser" --msgbox "Nope" 20 100
+        return
+    fi
+    echo "$current_url" >> ~/.mybrowser/next_page
+    # change page to previous page
+    current_url=$(tail -1 ~/.mybrowser/prev_page)
+    dialog --title "Nae browser" --msgbox "$(w3m -dump $current_url)" 200 100
+
+    # refresh file prev_page
+    idx=$(awk 'END{print NR}' ~/.mybrowser/prev_page)
+    if [ "$idx" = 1 ] ; then
+        cp /dev/null ~/.mybrowser/prev_page
+        return
+    fi
+    echo "$(sed "$idx d" ~/.mybrowser/prev_page)" > ~/.mybrowser/prev_page 
+}
+
+nextp () {
+    idx=$(awk 'END{print NR}' ~/.mybrowser/next_page)
+    if [ "$idx" = 0 ] ; then
+        dialog --title "Nae browser" --msgbox "Nope" 20 100
+        return
+    fi
+    echo "$current_url" >> ~/.mybrowser/prev_page 
+    # change page to next page
+    current_url=$(tail -1 ~/.mybrowser/next_page)
+    dialog --title "Nae browser" --msgbox "$(w3m -dump $current_url)" 200 100
+
+    # refresh file next_page
+    idx=$(awk 'END{print NR}' ~/.mybrowser/next_page)
+    if [ "$idx" = 1 ] ; then
+        cp /dev/null ~/.mybrowser/next_page 
+        return
+    fi
+    echo "$(sed "$idx d" ~/.mybrowser/next_page)" > ~/.mybrowser/next_page 
+}
 
 # if the response is no or esc, give the leaving message
 if [ $response = 1 -o $response = 255 ] ; then
@@ -89,7 +134,7 @@ elif [ $response = 0 ] ; then
     current_url=$homepage
     
     while : 
-    do    
+    do  
         user_input=$(dialog --title "Nae browser" --inputbox "$current_url" 20 100 \
             3>&1 1>&2 2>&3 3>&-) # if we do not include this command,
                                  # since the update of screen is by command output,
@@ -112,6 +157,7 @@ elif [ $response = 0 ] ; then
         curl --head $judge -s > /dev/null 
         
         if [ $? = 0 ] ; then
+            echo "$current_url" >> ~/.mybrowser/prev_page
             current_url=$(curl -sL -o /dev/null -w '%{url_effective}' $user_input)
             dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
         elif [ "$user_input"  = "/S" -o "$user_input" = "/source" ] ; then
@@ -131,6 +177,7 @@ elif [ $response = 0 ] ; then
             fi
             
             # change current page
+            echo "$current_url" >> ~/.mybrowser/prev_page
             current_url=$(echo "$link" | grep "^$idx" | gawk -F '\n' '{sub(/^[1-9]\s/, "", $1) ; print $1}')
             current_url=$(echo "$current_url" | gawk '{if(!/.*\/$/) print $1 "/"; else print $1}')
             
@@ -143,6 +190,10 @@ elif [ $response = 0 ] ; then
             download
         elif [ "$user_input" = "/B" -o "$user_input" = "/bookmark" ] ; then
             bookmark
+        elif [ "$user_input" = "/P" -o "$user_input" = "/previous" ] ; then
+            prevp
+        elif [ "$user_input" = "/N" -o "$user_input" = "/next" ] ; then
+            nextp
         elif [ "$user_input" = "" ] ; then
             break
         else
@@ -155,3 +206,7 @@ elif [ $response = 0 ] ; then
     done
     
 fi
+
+# delete page record
+rm ~/.mybrowser/next_page
+rm ~/.mybrowser/prev_page 
