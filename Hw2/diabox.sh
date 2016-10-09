@@ -21,7 +21,7 @@ help () {
 
 link () {
     # catch <a href="[link]"... 
-    link=$(curl -sL $current_url | grep "<a" | gawk -F "\n" '{if(match($1,/.*<a\shref="(.*)".*<\/a>/,lk)) print lk[1]}')
+    link=$(curl -sL $current_url | grep "<a" | gawk -F "\n" '{if(match($1,/.*<a\shref="(.*)".*<\/a>/,lk)) print lk[1]}' 2>> ~/.mybrowser/error)
     
     # make path plus url (use -v option to use shell variable)
     link=$(echo "$link" | gawk -v cur_link="$current_url" '{if(/^https?.*/) print NR " " $1 ; else print NR " " cur_link $1 }')
@@ -48,8 +48,7 @@ bookmark () {
     if [ "$idx" = "" ] ; then
         dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
         return
-    fi
-    if [ "$idx" -gt 2 ] ; then
+    elif [ "$idx" -gt 2 ] ; then
         idx=$(( $idx-2 ))
         current_url=$(sed -n "$idx p" ~/.mybrowser/bookmark)
         dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
@@ -57,6 +56,7 @@ bookmark () {
     else
         # add
         if [ $idx = 1 ] ; then
+            rep=""
             rep=$(cat ~/.mybrowser/bookmark | gawk -v cur_link="$current_url" '{if(cur_link == $1) print $1}')
             if [ "$rep" != "" ] ; then
                 dialog --title "Nae browser" --msgbox "This webpage is already in your bookmark." 20 100
@@ -71,7 +71,8 @@ bookmark () {
             if [ "$idx" = "" ] ; then
                 dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
             else
-                echo "$(sed "$idx d" ~/.mybrowser/bookmark)" > ~/.mybrowser/bookmark 
+                line=$(( $line+1 ))
+                echo "$(sed "$idx d" ~/.mybrowser/bookmark)" > ~/.mybrowser/bookmark
             fi
         fi
     fi
@@ -128,7 +129,7 @@ elif [ $response = 0 ] ; then
                 dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
                 continue
             fi
-
+            
             # change current page
             current_url=$(echo "$link" | grep "^$idx" | gawk -F '\n' '{sub(/^[1-9]\s/, "", $1) ; print $1}')
             current_url=$(echo "$current_url" | gawk '{if(!/.*\/$/) print $1 "/"; else print $1}')
