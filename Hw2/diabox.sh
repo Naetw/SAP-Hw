@@ -1,6 +1,16 @@
 #!/bin/sh 
 export LC_CTYPE='zh_TW.UTF-8'
 touch ~/.mybrowser/bookmark 
+touch ~/.mybrowser/error 
+
+echo "Do you like to play CTF?" > ~/.mybrowser/userterm 
+echo "URL => go to the URL
+/S => show the current page source code
+/L => show all links in current page
+/B => add or delete bookmark
+/H => Help
+/P => previous page
+/N => next page" > ~/.mybrowser/help 
 
 # build prev_page and next_page
 touch ~/.mybrowser/prev_page 
