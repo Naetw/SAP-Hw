@@ -63,42 +63,44 @@ download () {
 }
 
 bookmark () {
-    menu=$(echo "Add_a_bookmark"; echo "Delete_a_bookmark"; cat ~/.mybrowser/bookmark)
-    menu=$(echo "$menu" | gawk '{print NR " " $1}') 
-    idx=$(dialog --title "Nae browser" --menu "Bookmarks:" 200 100 200 `echo $menu` \
-        3>&1 1>&2 2>&3 3>&-)
-    if [ "$idx" = "" ] ; then
-        dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
-        return
-    elif [ "$idx" -gt 2 ] ; then
-        echo "$current_url" >> ~/.mybrowser/prev_page
-        idx=$(( $idx-2 ))
-        current_url=$(sed -n "$idx p" ~/.mybrowser/bookmark)
-        dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
-        return
-    else
-        # add
-        if [ $idx = 1 ] ; then
-            rep=""
-            rep=$(cat ~/.mybrowser/bookmark | gawk -v cur_link="$current_url" '{if(cur_link == $1) print $1}')
-            if [ "$rep" != "" ] ; then
-                dialog --title "Nae browser" --msgbox "This webpage is already in your bookmark." 20 100
-                return
-            fi
-            echo "$current_url" >> ~/.mybrowser/bookmark
-        # delete
+    while : 
+    do
+        menu=$(echo "Add_a_bookmark"; echo "Delete_a_bookmark"; cat ~/.mybrowser/bookmark)
+        menu=$(echo "$menu" | gawk '{print NR " " $1}') 
+        idx=$(dialog --title "Nae browser" --menu "Bookmarks:" 200 100 200 `echo $menu` \
+            3>&1 1>&2 2>&3 3>&-)
+        if [ "$idx" = "" ] ; then
+            dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
+            return
+        elif [ "$idx" -gt 2 ] ; then
+            echo "$current_url" >> ~/.mybrowser/prev_page
+            idx=$(( $idx-2 ))
+            current_url=$(sed -n "$idx p" ~/.mybrowser/bookmark)
+            dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
+            return
         else
-            menu=$(cat ~/.mybrowser/bookmark | gawk '{print NR " " $1}')
-            idx=$(dialog --title "Nae browser" --menu "Bookmarks:" 200 100 200 `echo $menu` \
-                3>&1 1>&2 2>&3 3>&-)
-            if [ "$idx" = "" ] ; then
-                dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
+            # add
+            if [ $idx = 1 ] ; then
+                rep=""
+                rep=$(cat ~/.mybrowser/bookmark | gawk -v cur_link="$current_url" '{if(cur_link == $1) print $1}')
+                if [ "$rep" != "" ] ; then
+                    dialog --title "Nae browser" --msgbox "This webpage is already in your bookmark." 20 100
+                fi
+                echo "$current_url" >> ~/.mybrowser/bookmark
+            # delete
             else
-                line=$(( $line+1 ))
-                echo "$(sed "$idx d" ~/.mybrowser/bookmark)" > ~/.mybrowser/bookmark
+                menu=$(cat ~/.mybrowser/bookmark | gawk '{print NR " " $1}')
+                idx=$(dialog --title "Nae browser" --menu "Bookmarks:" 200 100 200 `echo $menu` \
+                    3>&1 1>&2 2>&3 3>&-)
+                if [ "$idx" = "" ] ; then
+                    dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
+                else
+                    line=$(( $line+1 ))
+                    echo "$(sed "$idx d" ~/.mybrowser/bookmark)" > ~/.mybrowser/bookmark
+                fi
             fi
         fi
-    fi
+    done
 }
 
 prevp () {
