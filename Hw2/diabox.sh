@@ -34,7 +34,12 @@ homepage="https://www.google.co.uk/"
 current_url=""
 
 src () { # dump source to the dialog msgbox
-    dialog --title "Nae browser" --msgbox "$(curl -sL $current_url)" 200 100
+    curl -sL $current_url > tmp
+    if [ $(file -b --mime-encoding tmp) == "iso-8859-1" ] ; then
+        echo $(iconv -f BIG-5 -t UTF-8 tmp) > tmp
+    fi
+    dialog --title "Nae browser" --msgbox "$(cat tmp)" 200 100
+    rm -f tmp
 }
 
 help () {
@@ -158,7 +163,11 @@ elif [ $response = 0 ] ; then
             3>&1 1>&2 2>&3 3>&-) # if we do not include this command,
                                  # since the update of screen is by command output,
                                  # it will redirect in to $var, therefore the screen will be empty.
-
+        
+        # if canceled, break
+        if [ $? == 1 ] ; then
+            break
+        fi
         # shell cmd judge 
         sh_cmd="$(echo "$user_input" | gawk -F '\n' '{if(sub(/^!/, "", $1)) print $1}')"
         if [ "$sh_cmd" != "" ] ; then
@@ -213,8 +222,6 @@ elif [ $response = 0 ] ; then
             prevp
         elif [ "$user_input" = "/N" -o "$user_input" = "/next" ] ; then
             nextp
-        elif [ "$user_input" = "" ] ; then
-            break
         else
             dialog --title "Nae browser" --msgbox "Unknown command or wrong url!" 20 100
         fi
