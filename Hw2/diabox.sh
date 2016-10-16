@@ -1,4 +1,5 @@
 #!/bin/sh 
+{
 export LC_CTYPE='zh_TW.UTF-8'
 [ -d ~/.mybrowser/ ]
 if [ $? == 1 ] ; then
@@ -48,7 +49,7 @@ help () {
 
 link () {
     # catch <a href="[link]"... 
-    link=$(curl -sL $current_url | grep "<a" | gawk -F "\n" '{if(match($1,/.*<a\shref="(.*)".*<\/a>/,lk)) print lk[1]}' 2>> ~/.mybrowser/error)
+    link=$(curl -sL $current_url | grep "<a" | gawk -F "\n" '{if(match($1,/.*<a\shref="(.*)".*<\/a>/,lk)) print lk[1]}')
     
     # make path plus url (use -v option to use shell variable)
     link=$(echo "$link" | gawk -v cur_link="$current_url" '{if(/^https?.*/) print NR " " $1 ; else print NR " " cur_link $1 }')
@@ -57,8 +58,7 @@ link () {
 download () {
     link
     # extract link number
-    idx=$(dialog --title "Nae browser" --menu "Downloads:" 200 100 200 `echo $link` \
-        3>&1 1>&2 2>&3 3>&-)
+    idx=$(dialog --title "Nae browser" --output-fd 1 --menu "Downloads:" 200 100 200 `echo $link`)
     # if canceled, back to current page
     if [ "$idx" = "" ] ; then
         dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
@@ -72,8 +72,7 @@ bookmark () {
     do
         menu=$(echo "Add_a_bookmark"; echo "Delete_a_bookmark"; cat ~/.mybrowser/bookmark)
         menu=$(echo "$menu" | gawk '{print NR " " $1}') 
-        idx=$(dialog --title "Nae browser" --menu "Bookmarks:" 200 100 200 `echo $menu` \
-            3>&1 1>&2 2>&3 3>&-)
+        idx=$(dialog --title "Nae browser" --output-fd 1 --menu "Bookmarks:" 200 100 200 `echo $menu`)
         if [ "$idx" = "" ] ; then
             dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
             return
@@ -90,13 +89,13 @@ bookmark () {
                 rep=$(cat ~/.mybrowser/bookmark | gawk -v cur_link="$current_url" '{if(cur_link == $1) print $1}')
                 if [ "$rep" != "" ] ; then
                     dialog --title "Nae browser" --msgbox "This webpage is already in your bookmark." 20 100
+                    continue
                 fi
                 echo "$current_url" >> ~/.mybrowser/bookmark
             # delete
             else
                 menu=$(cat ~/.mybrowser/bookmark | gawk '{print NR " " $1}')
-                idx=$(dialog --title "Nae browser" --menu "Bookmarks:" 200 100 200 `echo $menu` \
-                    3>&1 1>&2 2>&3 3>&-)
+                idx=$(dialog --title "Nae browser" --output-fd 1 --menu "Bookmarks:" 200 100 200 `echo $menu`)
                 if [ "$idx" = "" ] ; then
                     dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100
                 else
@@ -159,10 +158,7 @@ elif [ $response = 0 ] ; then
     
     while : 
     do  
-        user_input=$(dialog --title "Nae browser" --inputbox "$current_url" 20 100 \
-            3>&1 1>&2 2>&3 3>&-) # if we do not include this command,
-                                 # since the update of screen is by command output,
-                                 # it will redirect in to $var, therefore the screen will be empty.
+        user_input=$(dialog --title "Nae browser" --output-fd 1 --inputbox "$current_url" 20 100)
         
         # if canceled, break
         if [ $? == 1 ] ; then
@@ -171,8 +167,13 @@ elif [ $response = 0 ] ; then
         # shell cmd judge 
         sh_cmd="$(echo "$user_input" | gawk -F '\n' '{if(sub(/^!/, "", $1)) print $1}')"
         if [ "$sh_cmd" != "" ] ; then
-            result=$(command $sh_cmd 2>> ~/.mybrowser/error)
-            dialog --title "Nae browser" --msgbox "$(printf "$result")" 200 100
+            result=""
+            result=$(command $sh_cmd)
+            if [ "$result" != "" ] ; then 
+                dialog --title "Nae browser" --msgbox "$(printf "$result")" 200 100
+            else 
+                dialog --title "Nae browser" --msgbox "Wrong command" 200 100
+            fi
             dialog --title "Nae browser" --msgbox "$(w3m -dump "$current_url")" 200 100 
             continue
         fi
@@ -195,8 +196,7 @@ elif [ $response = 0 ] ; then
         elif [ "$user_input" = "/L" -o "$user_input" = "/link" ] ; then
             link
             # extract link number
-            idx=$(dialog --title "Nae browser" --menu "Links:" 200 100 200 `echo $link` \
-                3>&1 1>&2 2>&3 3>&-)
+            idx=$(dialog --title "Nae browser" --output-fd 1 --menu "Links:" 200 100 200 `echo $link`)
 
             # if choosing cancel, back to inputbox
             if [ "$idx" = "" ] ; then
@@ -236,3 +236,4 @@ fi
 # delete page record
 rm ~/.mybrowser/next_page
 rm ~/.mybrowser/prev_page 
+} 2> ~/.mybrowser/error
