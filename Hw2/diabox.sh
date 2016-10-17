@@ -168,7 +168,7 @@ elif [ $response = 0 ] ; then
         sh_cmd="$(echo "$user_input" | gawk -F '\n' '{if(sub(/^!/, "", $1)) print $1}')"
         if [ "$sh_cmd" != "" ] ; then
             result=""
-            result=$(command $sh_cmd)
+            result=$(eval $sh_cmd)
             if [ "$result" != "" ] ; then 
                 dialog --title "Nae browser" --msgbox "$(printf "$result")" 200 100
             else 
