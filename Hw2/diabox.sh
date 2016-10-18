@@ -70,6 +70,10 @@ download () {
 bookmark () {
     while : 
     do
+        # clean empty line
+        grep -v '^$' ~/.mybrowser/bookmark > tmp
+        cat tmp > ~/.mybrowser/bookmark
+        rm -f tmp
         menu=$(echo "Add_a_bookmark"; echo "Delete_a_bookmark"; cat ~/.mybrowser/bookmark)
         menu=$(echo "$menu" | gawk '{print NR " " $1}') 
         idx=$(dialog --title "Nae browser" --output-fd 1 --menu "Bookmarks:" 200 100 200 `echo $menu`)
@@ -170,7 +174,7 @@ elif [ $response = 0 ] ; then
             result=""
             result=$(eval $sh_cmd)
             if [ "$result" != "" ] ; then 
-                dialog --title "Nae browser" --msgbox "$(printf "$result")" 200 100
+                dialog --title "Nae browser" --msgbox "$(printf "%s" "$result")" 200 100 # use format to prevent misunderstand about '-'
             else 
                 dialog --title "Nae browser" --msgbox "Wrong command" 200 100
             fi
