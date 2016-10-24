@@ -185,7 +185,7 @@ elif [ $response = 0 ] ; then
 
         # judge url if it's url, output to variable judge
         judge=$(echo "$user_input" |\
-            gawk '{if(match($1,/(https?:\/\/)?([\da-z\.-]+)\.[a-z\.]{2,6}[-A-Za-z0-9\+&@#\/%=~_|\?\.]*/, a)) print a[0]; else print "False"}')
+            gawk '{match($1,/(https?:\/\/)?([\da-z\.-]+)\.[a-z\.]{2,6}[-A-Za-z0-9\+&@#\/%=~_|\?\.]*/, a); if(length($1) == length(a[0])) print a[0]; else print "False"}')
         
         # dubble check
         curl --head $judge -s > /dev/null 
