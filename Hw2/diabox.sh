@@ -1,5 +1,5 @@
 #!/bin/sh 
-{
+
 export LC_CTYPE='zh_TW.UTF-8'
 [ -d ~/.mybrowser/ ]
 if [ $? == 1 ] ; then
@@ -11,6 +11,7 @@ touch ~/.mybrowser/error
 touch ~/.mybrowser/userterm 
 touch ~/.mybrowser/help 
 
+{
 echo "Do you like to play CTF?" > ~/.mybrowser/userterm 
 echo "URL => go to the URL
 /S => show the current page source code
