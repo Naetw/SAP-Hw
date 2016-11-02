@@ -19,7 +19,7 @@ if [ $1 != "--list" -a $1 != "--delete" ]; then
     
     # set total number of this Dataset
     total=$(zfs list -r -t snapshot | grep "^${target}@zbackup\..*" | awk -F '\n' 'END{print NR}')
-    echo $total
+    
     # check snapshot number, if reach max, then delete oldest one (-q for no output)
     zfs list -r -t snapshot | grep -q "^${target}@zbackup\.${rotate_count}"
     if [ $? == 0 ]; then
@@ -41,7 +41,7 @@ if [ $1 != "--list" -a $1 != "--delete" ]; then
 
     # add new snapshot
     zfs snapshot -r ${target}@zbackup.0
-elif [ $1 == "--list" ]; then
+else
     
     # generate zbackup list
     list=$(zfs list -r -t snapshot -o name,creation | grep -e NAME -e ".*@zbackup\..*") # grep two pattern
@@ -58,30 +58,43 @@ elif [ $1 == "--list" ]; then
     } 
     else print $1
     }')
- 
-    if [ "$2" == "" ]; then #just list snapshot
-        echo "$list"
-    else 
-        #list specified snapshot  
-        # specified ID 
-        if [ "$3" != "" ]; then
-            echo "$list" | awk -F '\n' -v spec_idx=$3 '{if(NR == spec_idx+1 || NR == 1)print $1;}' 
+     
+    if [ $1 == "--list" ]; then
+        if [ "$2" == "" ]; then #just list snapshot
+            echo "$list"
+        else 
+            #list specified snapshot  
+            # specified ID 
+            if [ "$3" != "" ]; then
+                echo "$list" | awk -F '\n' -v spec_idx=$3 '{if(NR == spec_idx+1 || NR == 1)print $1;}' 
+            else
+                echo "$list" | grep  -e $2 -e ID
+            fi
+        fi
+    elif [ $1 == "--delete" ]; then 
+    
+        # check dataset specified
+        if [ "$2" == "" ]; then
+            printf "\nYou need to specify the dataset!\n\n"
+            exit 1
+        fi
+        
+        if [ "$3" == "" ]; then
+
+            # no ID specified - delete all
+            del_total=$(echo "$list" | grep $2 | wc -l)
+            while [ $del_total -gt 0 ]; do
+                zfs destroy -r $2@zbackup.`expr $del_total - 1`
+                del_total=$(( $del_total - 1 ))
+            done
+            printf "\nDelete done!\n\n"
+        
+        # delete specified ID
         else
-            echo "$list" | grep  -e $2 -e ID
+            del_target=$(echo "$list" | grep "^$3")
+            del_target=$(echo $del_target | awk '{print $2}')
+            zfs destroy -r $del_target
         fi
     fi
-elif [ $1 == "--delete" ]; then
-    
-    # check dataset specified
-    if [ "$2" == "" ]; then
-        printf "\nYou need to specify the dataset!\n"
-        exit 1
-    fi
-    
-    #if [ "$3" == "" ]; then
-
-        # no ID specified - delete all
-        
-
 fi
 
