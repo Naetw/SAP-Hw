@@ -8,7 +8,14 @@ if [ $# == 0 ]; then
 fi
 
 if [ $1 != "--list" -a $1 != "--delete" ]; then
-    target=$1
+    
+    # make user to specify dataset easily
+    echo $1 | grep -q  "^\/.*"
+    if [ $? == 0 ]; then
+        target=$(echo $1 | gawk '{match($1, /^\/([a-zA-Z0-9]+\/[a-zA-Z0-9]+)\/?/, dataset); print dataset[1]}')
+    else
+        target=$1
+    fi
     
     # set rotate_count
     if [ "$2" == "" ]; then
