@@ -9,7 +9,7 @@ fi
 
 if [ $1 != "--list" -a $1 != "--delete" ]; then
     
-    # make user to specify dataset easily
+    # make user to specify dataset easily, extract out target
     echo $1 | grep -q  "^\/.*"
     if [ $? == 0 ]; then
         target=$(echo $1 | gawk '{match($1, /^\/([a-zA-Z0-9]+\/[a-zA-Z0-9]+)\/?/, dataset); print dataset[1]}')
@@ -25,16 +25,16 @@ if [ $1 != "--list" -a $1 != "--delete" ]; then
     fi
     
     # set total number of this Dataset
-    total=$(zfs list -r -t snapshot | grep "^${target}@zbackup\..*" | awk -F '\n' 'END{print NR}')
+    total=$(zfs list -r -t snapshot | grep "^${target}@zbackup-.*" | awk -F '\n' 'END{print NR}')
     
     # check snapshot number, if reach max, then delete oldest one (-q for no output)
-    zfs list -r -t snapshot | grep -q "^${target}@zbackup\.${rotate_count}"
+    zfs list -r -t snapshot | grep -q "^${target}@zbackup-${rotate_count}"
     if [ $? == 0 ]; then
         
         # clean up 
         while [ $total -gt $rotate_count ]; do
             # delete the oldest one
-            zfs destroy -r ${target}@zbackup.`expr $total - 1`
+            zfs destroy -r ${target}@zbackup-`expr $total - 1`
             total=$(( $total-1 ))
         done
     fi
@@ -42,16 +42,16 @@ if [ $1 != "--list" -a $1 != "--delete" ]; then
     # rename the remaining list
     while [ $total -gt 0 ]; do
         src=$(( $total-1 ))
-        zfs rename -r ${target}@zbackup.${src} ${target}@zbackup.${total}
+        zfs rename -r ${target}@zbackup-${src} ${target}@zbackup-${total}
         total=$(( $total-1 ))
     done
 
     # add new snapshot
-    zfs snapshot -r ${target}@zbackup.0
+    zfs snapshot -r ${target}@zbackup-0
 else
     
     # generate zbackup list
-    list=$(zfs list -r -t snapshot -o name,creation | grep -e NAME -e ".*@zbackup\..*") # grep two pattern
+    list=$(zfs list -r -t snapshot -o name,creation | grep -e NAME -e ".*@zbackup-.*") # grep two pattern
     
     # add index
     list=$(echo "$list" | awk -F '\n' 'BEGIN{idx=1}{if(NR > 1){print idx "\t" $1; idx=idx+1}else print "ID\t" $1}')
@@ -86,12 +86,14 @@ else
             exit 1
         fi
         
+
         if [ "$3" == "" ]; then
 
             # no ID specified - delete all
             del_total=$(echo "$list" | grep $2 | wc -l)
+            echo $del_total
             while [ $del_total -gt 0 ]; do
-                zfs destroy -r $2@zbackup.`expr $del_total - 1`
+                zfs destroy -r $2@zbackup-`expr $del_total - 1`
                 del_total=$(( $del_total - 1 ))
             done
             printf "\nDelete done!\n\n"
