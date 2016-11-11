@@ -52,8 +52,12 @@ create () {
 
 make_list () {
     # generate zbackup list
-    list=$(zfs list -r -t snapshot -o name,creation | grep -e NAME -e ".*@zbackup-.*") # grep two pattern
-    
+    if [ $# == 0 ] ; then
+        list=$(zfs list -r -t snapshot -o name,creation | grep -e NAME -e ".*@zbackup-.*") # grep two pattern
+    else
+        list=$(zfs list -r -t snapshot -o name,creation | grep -e NAME -e "$1@zbackup-.*") # grep two pattern
+    fi
+
     # add index
     list=$(echo "$list" | awk -F '\n' 'BEGIN{idx=1}{if(NR > 1){print idx "\t" $1; idx=idx+1}else print "ID\t" $1}')
     
@@ -121,17 +125,20 @@ delete () {
         del_target=$(echo "$list" | grep "^$2")
         del_target=$(echo $del_target | awk '{print $2}')
         zfs destroy -r $del_target
+
+        # reset name and order
+        gap_num=$2
     fi
 }
 
 if [ $1 != "--list" -a $1 != "--delete" ] ; then
     create $1 $2 
 else
-    make_list
-   
     if [ $1 == "--list" ] ; then
+        make_list
         show_list $2 $3        
-    elif [ $1 == "--delete" ] ; then 
+    elif [ $1 == "--delete" ] ; then
+        make_list $2
         delete $2 $3
     fi
 fi
