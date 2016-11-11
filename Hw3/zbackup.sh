@@ -127,7 +127,17 @@ delete () {
         zfs destroy -r $del_target
 
         # reset name and order
+        spec_total=$(echo "$list" | grep "$1" | wc -l)
         gap_num=$2
+        while true ; do
+            echo "$list" | grep -q "$1@zbackup-$gap_num"
+            if [ $? == 0 ] ; then
+                zfs rename -r $1@zbackup-`expr $spec_total - $gap_num + 1` $1@zbackup-`expr $spec_total - $gap_num`
+            else
+                break
+            fi
+            gap_num=$(( $gap_num - 1 ))
+        done
     fi
 }
 
