@@ -72,6 +72,8 @@ make_list () {
         list=$(echo "$list" | gawk -F '\n' -v i=$idx -v time=$time_tmp '{
         if(NR-1 == i){
             sub(/[A-Za-z]{3} [A-Za-z]{3}.*/, time, $1);
+            sub(/@zbackup-[0-9]{2}/, "\t\t  ", $1);
+            sub(/@zbackup-[0-9]{1}/, "\t\t ", $1);
             print $1
         }
         else if(NR == 1){
@@ -83,6 +85,8 @@ make_list () {
         }')
         idx=$(( $idx + 1 ))
     done
+
+    
    
     # delet the file
     rm -f tmp
