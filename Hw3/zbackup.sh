@@ -101,7 +101,7 @@ show_list () {
         if [ "$2" != "" ] ; then
             echo "$list" | awk -F '\n' -v spec_idx=$2 '{if(NR == spec_idx+1 || NR == 1)print $1;}' 
         else
-            echo "$list" | grep  -e $1 -e ID
+            echo "$list" | grep  -e $1 -e ID | awk -v dataset=$1 '{if($2 == dataset) print $0}'
         fi
     fi
 
@@ -128,7 +128,8 @@ delete () {
     else
         del_target=$(echo "$list" | grep "^$2")
         del_target=$(echo $del_target | awk '{print $2}')
-        zfs destroy -r $del_target
+        zfs destroy -r $del_target@zbackup-`expr $2 - 1`
+
 
         # reset name and order
         spec_total=$(echo "$list" | grep "$1" | wc -l)
